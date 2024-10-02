@@ -135,7 +135,9 @@ class TerminationManager(ManagerBase):
         extras = {}
         for key in self._term_dones.keys():
             # store information
-            extras["Episode_Termination/" + key] = torch.count_nonzero(self._term_dones[key][env_ids]).item()
+            extras["Episode_Termination/" + key] = (
+                torch.count_nonzero(self._term_dones[key][env_ids]).item() / self.num_envs
+            )
         # reset all the reward terms
         for term_cfg in self._class_term_cfgs:
             term_cfg.func.reset(env_ids=env_ids)
