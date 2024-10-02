@@ -52,9 +52,18 @@ def process_sb3_cfg(cfg: dict) -> dict:
             if isinstance(value, dict):
                 update_dict(value)
             else:
-                if key in ["policy_kwargs", "replay_buffer_class", "replay_buffer_kwargs"]:
+                if key in [
+                    "policy_kwargs",
+                    "replay_buffer_class",
+                    "replay_buffer_kwargs",
+                ]:
                     hyperparams[key] = eval(value)
-                elif key in ["learning_rate", "clip_range", "clip_range_vf", "delta_std"]:
+                elif key in [
+                    "learning_rate",
+                    "clip_range",
+                    "clip_range_vf",
+                    "delta_std",
+                ]:
                     if isinstance(value, str):
                         _, initial_value = value.split("_")
                         initial_value = float(initial_value)
@@ -303,7 +312,12 @@ class Sb3VecEnvWrapper(VecEnv):
         return obs
 
     def _process_extras(
-        self, obs: np.ndarray, terminated: np.ndarray, truncated: np.ndarray, extras: dict, reset_ids: np.ndarray
+        self,
+        obs: np.ndarray,
+        terminated: np.ndarray,
+        truncated: np.ndarray,
+        extras: dict,
+        reset_ids: np.ndarray,
     ) -> list[dict[str, Any]]:
         """Convert miscellaneous information into dictionary for each sub-environment."""
         # create empty list of dictionaries to fill
@@ -318,6 +332,8 @@ class Sb3VecEnvWrapper(VecEnv):
                 infos[idx]["episode"]["l"] = float(self._ep_len_buf[idx])
             else:
                 infos[idx]["episode"] = None
+            # fill-in custom success information
+            infos[idx]["is_success"] = extras["log"]["Episode_Termination/success"]
             # fill-in bootstrap information
             infos[idx]["TimeLimit.truncated"] = truncated[idx] and not terminated[idx]
             # fill-in information from extras
