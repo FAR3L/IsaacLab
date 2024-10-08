@@ -89,6 +89,7 @@ def main():
         import_sites=args_cli.import_sites,
         force_usd_conversion=True,
         make_instanceable=args_cli.make_instanceable,
+        self_collision=True
     )
 
     # Print info
