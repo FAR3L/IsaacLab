@@ -132,7 +132,7 @@ class Sb3VecEnvWrapper(VecEnv):
 
     """
 
-    def __init__(self, env: ManagerBasedRLEnv | DirectRLEnv):
+    def __init__(self, env: ManagerBasedRLEnv | DirectRLEnv, bbrl=False):
         """Initialize the wrapper.
 
         Args:
@@ -153,12 +153,16 @@ class Sb3VecEnvWrapper(VecEnv):
         self.num_envs = self.unwrapped.num_envs
         self.sim_device = self.unwrapped.device
         self.render_mode = self.unwrapped.render_mode
+        self.bbrl = bbrl
 
         # obtain gym spaces
         # note: stable-baselines3 does not like when we have unbounded action space so
         #   we set it to some high value here. Maybe this is not general but something to think about.
         observation_space = self.unwrapped.single_observation_space["policy"]
-        action_space = self.unwrapped.single_action_space
+        if bbrl:
+            action_space = self.env.action_space
+        else:
+            action_space = self.unwrapped.single_action_space
         if isinstance(action_space, gym.spaces.Box) and not action_space.is_bounded("both"):
             action_space = gym.spaces.Box(low=-100, high=100, shape=action_space.shape)
 
@@ -333,7 +337,11 @@ class Sb3VecEnvWrapper(VecEnv):
             else:
                 infos[idx]["episode"] = None
             # fill-in custom success information
-            infos[idx]["is_success"] = extras["log"]["Episode_Termination/success"]
+            infos[idx]["is_success"] = (
+                extras["log"]["Episode_Termination/success"]
+                if not self.bbrl
+                else extras["log"][-1]["Episode_Termination/success"]
+            )  # TODO error in success rate logging?
             # fill-in bootstrap information
             infos[idx]["TimeLimit.truncated"] = truncated[idx] and not terminated[idx]
             # fill-in information from extras
@@ -343,8 +351,12 @@ class Sb3VecEnvWrapper(VecEnv):
                 if key == "log":
                     # only log this data for episodes that are terminated
                     if infos[idx]["episode"] is not None:
+                        if self.bbrl:
+                            value = value[-1]
                         for sub_key, sub_value in value.items():
                             infos[idx]["episode"][sub_key] = sub_value
+                elif key == "trajectory_length":
+                    infos[idx][key] = value
                 else:
                     infos[idx][key] = value[idx]
             # add information about terminal observation separately
