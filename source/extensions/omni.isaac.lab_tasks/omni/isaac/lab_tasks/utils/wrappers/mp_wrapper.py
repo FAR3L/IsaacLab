@@ -15,14 +15,7 @@ class MPWrapper(RawInterfaceWrapper):
         if self.env.spec.max_episode_steps is None:
             self.env.spec.max_episode_steps = self.env.unwrapped.max_episode_length
 
-    mp_config = {
-        "ProDMP": {
-            "phase_generator_kwargs": {
-                "phase_generator_type": "exp",
-                "tau": 0.5,
-            },
-        }
-    }
+    mp_config = {"ProDMP": {}}
 
     @property
     def action_space(self):
